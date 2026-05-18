@@ -1,0 +1,38 @@
+name: Monitor de Medicamento Alto Custo GDF
+
+on:
+  schedule:
+    # Roda a cada 15 minutos (Sintaxe Cron)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Permite que você force a execução manualmente pelo site
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v3
+
+    - name: Configurar o Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Instalar dependências
+      run: |
+        pip install requests beautifulsoup4
+
+    - name: Executar o Monitor
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: python monitor.py
+
+    - name: Salvar alteração de status do estoque no repositório
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add status_anterior.txt
+        git commit -m "Atualiza status do estoque [skip ci]" || exit 0
+        git push
